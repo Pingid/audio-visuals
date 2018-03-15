@@ -22,37 +22,27 @@ module.exports = (regl, size, detail, center) => {
 
 		  #pragma glslify: snoise4 = require(glsl-noise/simplex/4d);
 
-		  mat4 rotationMatrix(vec3 axis, float angle)
-			{
-			    axis = normalize(axis);
-			    float s = sin(angle);
-			    float c = cos(angle);
-			    float oc = 1.0 - c;
-			    
-			    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-			                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-			                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-			                0.0,                                0.0,                                0.0,                                1.0);
+		  float mouse_dist(vec3 pos, vec2 mouse) {
+				return length(vec2(mouse.x - pos.x, mouse.y - pos.y));
 			}
 
 		  void main () {
-		    vpos = pos;
 
 		    intensity = 0.0;
 				float bin = floor(8.0 * (1.0 + pos.x));
 		    for (int i = 0; i < 16; ++i) { intensity += beats[i]; }
 
-		    gl_PointSize = 4.0;
+		    gl_PointSize = 1.0 + length(pos) * length(pos) * 5.0;
 
-		  	// vec3 rotation = rotate(vpos, vec3(1,1,1), 0.1 * tick);
-		  	vec3 noise = vpos * snoise4(vec4(vpos, tick * 0.1) * 0.2) * freq;
-		  	vec3 intesDist = vpos * intensity * 0.01;
-		  	vec3 freqDist = vpos * freq * 0.5;
-		  	vec3 pitchDist = vpos * vpitch * 0.1;
+		  	// vec3 rotation = rotate(pos, vec3(1,1,1), 0.1 * tick);
+		  	vec3 noise = pos * snoise4(vec4(pos, tick * 0.1) * 0.2) * freq;
+		  	vec3 intesDist = pos * intensity * 0.01;
+		  	vec3 freqDist = pos * freq * 0.5;
+		  	vec3 pitchDist = pos * vpitch * 0.1;
+		    vpos = pos * 0.5 + freqDist + intesDist;
 
-		  	mat4 trans = getMatrix('translate(40px, 20px)');
 
-		    gl_Position = trans * projection * view * vec4(vpos * 0.5 + freqDist + intesDist, 1.0);
+		    gl_Position = projection * view * vec4(vpos, 1.0);
 		  }
 	  `,
 
@@ -69,8 +59,8 @@ module.exports = (regl, size, detail, center) => {
 	    void main () {
 	    	vec3 color = vec3(.2 - abs(vpos * 1.5).x, .2 - abs(vpos * 1.5).y, 1.0 * sin(tick * 0.001));
 	    	// vec3 color = vec3(0,0,0);
-	    	vec3 noise = color * snoise4(vec4(color * 3.0, tick * 0.01));
-	      gl_FragColor = vec4(color * 5.0 + noise, 1);
+	    	vec3 noise = color * snoise4(vec4(color * 3.0, tick * 0.01)) * 10.0;
+	      gl_FragColor = vec4(color * 2.0 + noise, 1);
 	    }
 	  `,
 

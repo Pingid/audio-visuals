@@ -7,9 +7,9 @@ const camera = require('regl-camera')(regl, {
 	center: [0, 0, 0]
 })
 
-const sphere = require('./sphere');
+const circle = require('./circle');
 
-const drawSphere = sphere(regl, .5, 6, [0, 0, 0]);
+let drawCircle = circle(regl, .3, 1000, [0, 0, 0]);
 
 require('regl-audio/microphone')({
   regl,
@@ -17,15 +17,15 @@ require('regl-audio/microphone')({
   name: '',
   maxPitch: 1000,
   minPitch: 500,
-  pitches: 400,
+  pitches: 1000,
   // beatThreshold: .1,
   done: (microphone) => {
 
-    regl.frame(() => {	
+    regl.frame(({ tick }) => {	
 			microphone(({ freqTexture, timeTexture, beats, pitches, volume, cepstrum }) => {
 				camera(() => {
-					regl.clear({ color: [1, 1, 1, 1], depth: true })
-          drawSphere({  });
+					regl.clear({ color: [0, 0, 0, 1], depth: true })
+          drawCircle();
 					// points,point,lines,line,triangles,triangle,line loop,line strip,triangle strip,triangle fan
 				})
 			})

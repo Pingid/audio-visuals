@@ -1,55 +1,58 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-const glsl = require('glslify');
-const regl = require('regl')()
-const camera = require('regl-camera')(regl, { 
-	distance: 1.5,
-	theta: Math.PI * .3,
-	mouse: true,
-	center: [0, 0, 0]
-})
-
-const sphere = require('./sphere');
-
-const drawSphere = sphere(regl, .5, 6, [0, 0, 0]);
-
-require('regl-audio/microphone')({
-  regl,
-  beats: 16,
-  name: '',
-  maxPitch: 1000,
-  minPitch: 500,
-  pitches: 400,
-  // beatThreshold: .1,
-  done: (microphone) => {
-
-    regl.frame(() => {	
-			microphone(({ freqTexture, timeTexture, beats, pitches, volume, cepstrum }) => {
-				camera(() => {
-					regl.clear({ color: [0, 0, 0, 1], depth: true })
-          drawSphere();
-					// points,point,lines,line,triangles,triangle,line loop,line strip,triangle strip,triangle fan
-				})
-			})
-		})
-  }
-})
-},{"./sphere":2,"glslify":7,"regl":17,"regl-audio/microphone":14,"regl-camera":16}],2:[function(require,module,exports){
-const glslify = require('glslify');
-const icosphere = require('icosphere');
+const shapes = require('./shapes');
 
 module.exports = (regl, size, detail, center) => {
+	console.log(detail)
 	const maxPitch = 1000;
-	const sphere = icosphere(detail);
-	const extend = arr => Array(sphere.positions.length).fill(1)
+	const extend = arr => Array(detail).fill(1)
 		.map((x, i) => arr[i % arr.length]);	
 	return regl({
-		vert: glslify(["\n\t\t  precision mediump float;\n#define GLSLIFY 1\n\n\n\t\t  attribute float que, pitch, freq;\n\t\t  attribute vec3 pos;\n\n\t\t\tuniform mat4 projection, view;\n\t\t  uniform float beats[16];\n\t\t  uniform float tick, volume;\n\n\t\t  varying vec3 vpos;\n\t\t  varying float vpitch, vfreq, intensity;\n\n\t\t  //\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0; }\n\nfloat mod289(float x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0; }\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat permute(float x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat taylorInvSqrt(float r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nvec4 grad4(float j, vec4 ip)\n  {\n  const vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);\n  vec4 p,s;\n\n  p.xyz = floor( fract (vec3(j) * ip.xyz) * 7.0) * ip.z - 1.0;\n  p.w = 1.5 - dot(abs(p.xyz), ones.xyz);\n  s = vec4(lessThan(p, vec4(0.0)));\n  p.xyz = p.xyz + (s.xyz*2.0 - 1.0) * s.www;\n\n  return p;\n  }\n\n// (sqrt(5) - 1)/4 = F4, used once below\n#define F4 0.309016994374947451\n\nfloat snoise(vec4 v)\n  {\n  const vec4  C = vec4( 0.138196601125011,  // (5 - sqrt(5))/20  G4\n                        0.276393202250021,  // 2 * G4\n                        0.414589803375032,  // 3 * G4\n                       -0.447213595499958); // -1 + 4 * G4\n\n// First corner\n  vec4 i  = floor(v + dot(v, vec4(F4)) );\n  vec4 x0 = v -   i + dot(i, C.xxxx);\n\n// Other corners\n\n// Rank sorting originally contributed by Bill Licea-Kane, AMD (formerly ATI)\n  vec4 i0;\n  vec3 isX = step( x0.yzw, x0.xxx );\n  vec3 isYZ = step( x0.zww, x0.yyz );\n//  i0.x = dot( isX, vec3( 1.0 ) );\n  i0.x = isX.x + isX.y + isX.z;\n  i0.yzw = 1.0 - isX;\n//  i0.y += dot( isYZ.xy, vec2( 1.0 ) );\n  i0.y += isYZ.x + isYZ.y;\n  i0.zw += 1.0 - isYZ.xy;\n  i0.z += isYZ.z;\n  i0.w += 1.0 - isYZ.z;\n\n  // i0 now contains the unique values 0,1,2,3 in each channel\n  vec4 i3 = clamp( i0, 0.0, 1.0 );\n  vec4 i2 = clamp( i0-1.0, 0.0, 1.0 );\n  vec4 i1 = clamp( i0-2.0, 0.0, 1.0 );\n\n  //  x0 = x0 - 0.0 + 0.0 * C.xxxx\n  //  x1 = x0 - i1  + 1.0 * C.xxxx\n  //  x2 = x0 - i2  + 2.0 * C.xxxx\n  //  x3 = x0 - i3  + 3.0 * C.xxxx\n  //  x4 = x0 - 1.0 + 4.0 * C.xxxx\n  vec4 x1 = x0 - i1 + C.xxxx;\n  vec4 x2 = x0 - i2 + C.yyyy;\n  vec4 x3 = x0 - i3 + C.zzzz;\n  vec4 x4 = x0 + C.wwww;\n\n// Permutations\n  i = mod289(i);\n  float j0 = permute( permute( permute( permute(i.w) + i.z) + i.y) + i.x);\n  vec4 j1 = permute( permute( permute( permute (\n             i.w + vec4(i1.w, i2.w, i3.w, 1.0 ))\n           + i.z + vec4(i1.z, i2.z, i3.z, 1.0 ))\n           + i.y + vec4(i1.y, i2.y, i3.y, 1.0 ))\n           + i.x + vec4(i1.x, i2.x, i3.x, 1.0 ));\n\n// Gradients: 7x7x6 points over a cube, mapped onto a 4-cross polytope\n// 7*7*6 = 294, which is close to the ring size 17*17 = 289.\n  vec4 ip = vec4(1.0/294.0, 1.0/49.0, 1.0/7.0, 0.0) ;\n\n  vec4 p0 = grad4(j0,   ip);\n  vec4 p1 = grad4(j1.x, ip);\n  vec4 p2 = grad4(j1.y, ip);\n  vec4 p3 = grad4(j1.z, ip);\n  vec4 p4 = grad4(j1.w, ip);\n\n// Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n  p4 *= taylorInvSqrt(dot(p4,p4));\n\n// Mix contributions from the five corners\n  vec3 m0 = max(0.6 - vec3(dot(x0,x0), dot(x1,x1), dot(x2,x2)), 0.0);\n  vec2 m1 = max(0.6 - vec2(dot(x3,x3), dot(x4,x4)            ), 0.0);\n  m0 = m0 * m0;\n  m1 = m1 * m1;\n  return 49.0 * ( dot(m0*m0, vec3( dot( p0, x0 ), dot( p1, x1 ), dot( p2, x2 )))\n               + dot(m1*m1, vec2( dot( p3, x3 ), dot( p4, x4 ) ) ) ) ;\n\n  }\n\n\t\t  float mouse_dist(vec3 pos, vec2 mouse) {\n\t\t\t\treturn length(vec2(mouse.x - pos.x, mouse.y - pos.y));\n\t\t\t}\n\n\t\t  void main () {\n\n\t\t    intensity = 0.0;\n\t\t\t\tfloat bin = floor(8.0 * (1.0 + pos.x));\n\t\t    for (int i = 0; i < 16; ++i) { intensity += beats[i]; }\n\n\t\t    gl_PointSize = 1.0 + length(pos) * length(pos) * 5.0;\n\n\t\t  \t// vec3 rotation = rotate(pos, vec3(1,1,1), 0.1 * tick);\n\t\t  \tvec3 noise = pos * snoise(vec4(pos, tick * 0.1) * 0.2) * freq;\n\t\t  \tvec3 intesDist = pos * intensity * 0.01;\n\t\t  \tvec3 freqDist = pos * freq * 0.5;\n\t\t  \tvec3 pitchDist = pos * vpitch * 0.1;\n\t\t    vpos = pos * 0.5 + freqDist + intesDist;\n\n\t\t    gl_Position = projection * view * vec4(vpos, 1.0);\n\t\t  }\n\t  ",""]),
+	  vert: `
+		  precision highp float;
 
-	  frag: glslify(["\n\t    precision mediump float;\n#define GLSLIFY 1\n\n\t    uniform vec4 pitches;\n\t    uniform float tick;\n\n\t    varying vec3 vpos;\n\t    varying float vpitch, vfreq, intensity;\n\n\t    //\n// Description : Array and textureless GLSL 2D/3D/4D simplex\n//               noise functions.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n//\n\nvec4 mod289(vec4 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0; }\n\nfloat mod289(float x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0; }\n\nvec4 permute(vec4 x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat permute(float x) {\n     return mod289(((x*34.0)+1.0)*x);\n}\n\nvec4 taylorInvSqrt(vec4 r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nfloat taylorInvSqrt(float r)\n{\n  return 1.79284291400159 - 0.85373472095314 * r;\n}\n\nvec4 grad4(float j, vec4 ip)\n  {\n  const vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);\n  vec4 p,s;\n\n  p.xyz = floor( fract (vec3(j) * ip.xyz) * 7.0) * ip.z - 1.0;\n  p.w = 1.5 - dot(abs(p.xyz), ones.xyz);\n  s = vec4(lessThan(p, vec4(0.0)));\n  p.xyz = p.xyz + (s.xyz*2.0 - 1.0) * s.www;\n\n  return p;\n  }\n\n// (sqrt(5) - 1)/4 = F4, used once below\n#define F4 0.309016994374947451\n\nfloat snoise(vec4 v)\n  {\n  const vec4  C = vec4( 0.138196601125011,  // (5 - sqrt(5))/20  G4\n                        0.276393202250021,  // 2 * G4\n                        0.414589803375032,  // 3 * G4\n                       -0.447213595499958); // -1 + 4 * G4\n\n// First corner\n  vec4 i  = floor(v + dot(v, vec4(F4)) );\n  vec4 x0 = v -   i + dot(i, C.xxxx);\n\n// Other corners\n\n// Rank sorting originally contributed by Bill Licea-Kane, AMD (formerly ATI)\n  vec4 i0;\n  vec3 isX = step( x0.yzw, x0.xxx );\n  vec3 isYZ = step( x0.zww, x0.yyz );\n//  i0.x = dot( isX, vec3( 1.0 ) );\n  i0.x = isX.x + isX.y + isX.z;\n  i0.yzw = 1.0 - isX;\n//  i0.y += dot( isYZ.xy, vec2( 1.0 ) );\n  i0.y += isYZ.x + isYZ.y;\n  i0.zw += 1.0 - isYZ.xy;\n  i0.z += isYZ.z;\n  i0.w += 1.0 - isYZ.z;\n\n  // i0 now contains the unique values 0,1,2,3 in each channel\n  vec4 i3 = clamp( i0, 0.0, 1.0 );\n  vec4 i2 = clamp( i0-1.0, 0.0, 1.0 );\n  vec4 i1 = clamp( i0-2.0, 0.0, 1.0 );\n\n  //  x0 = x0 - 0.0 + 0.0 * C.xxxx\n  //  x1 = x0 - i1  + 1.0 * C.xxxx\n  //  x2 = x0 - i2  + 2.0 * C.xxxx\n  //  x3 = x0 - i3  + 3.0 * C.xxxx\n  //  x4 = x0 - 1.0 + 4.0 * C.xxxx\n  vec4 x1 = x0 - i1 + C.xxxx;\n  vec4 x2 = x0 - i2 + C.yyyy;\n  vec4 x3 = x0 - i3 + C.zzzz;\n  vec4 x4 = x0 + C.wwww;\n\n// Permutations\n  i = mod289(i);\n  float j0 = permute( permute( permute( permute(i.w) + i.z) + i.y) + i.x);\n  vec4 j1 = permute( permute( permute( permute (\n             i.w + vec4(i1.w, i2.w, i3.w, 1.0 ))\n           + i.z + vec4(i1.z, i2.z, i3.z, 1.0 ))\n           + i.y + vec4(i1.y, i2.y, i3.y, 1.0 ))\n           + i.x + vec4(i1.x, i2.x, i3.x, 1.0 ));\n\n// Gradients: 7x7x6 points over a cube, mapped onto a 4-cross polytope\n// 7*7*6 = 294, which is close to the ring size 17*17 = 289.\n  vec4 ip = vec4(1.0/294.0, 1.0/49.0, 1.0/7.0, 0.0) ;\n\n  vec4 p0 = grad4(j0,   ip);\n  vec4 p1 = grad4(j1.x, ip);\n  vec4 p2 = grad4(j1.y, ip);\n  vec4 p3 = grad4(j1.z, ip);\n  vec4 p4 = grad4(j1.w, ip);\n\n// Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n  p4 *= taylorInvSqrt(dot(p4,p4));\n\n// Mix contributions from the five corners\n  vec3 m0 = max(0.6 - vec3(dot(x0,x0), dot(x1,x1), dot(x2,x2)), 0.0);\n  vec2 m1 = max(0.6 - vec2(dot(x3,x3), dot(x4,x4)            ), 0.0);\n  m0 = m0 * m0;\n  m1 = m1 * m1;\n  return 49.0 * ( dot(m0*m0, vec3( dot( p0, x0 ), dot( p1, x1 ), dot( p2, x2 )))\n               + dot(m1*m1, vec2( dot( p3, x3 ), dot( p4, x4 ) ) ) ) ;\n\n  }\n\n\t    void main () {\n\t    \tvec3 color = vec3(.2 - abs(vpos * 1.5).x, .2 - abs(vpos * 1.5).y, 1.0 * sin(tick * 0.001));\n\t    \t// vec3 color = vec3(0,0,0);\n\t    \tvec3 noise = color * snoise(vec4(color * 3.0, tick * 0.01)) * 10.0;\n\t      gl_FragColor = vec4(color * 2.0 + noise, 1);\n\t    }\n\t  ",""]),
+		  attribute float que, pitch, freq;
+		  attribute vec3 pos;
+		  
+
+			uniform mat4 projection, view;
+		  uniform float beats[16];
+		  uniform float tick, volume;
+
+		  varying vec3 vpos;
+		  varying float vpitch, vfreq, intensity;
+
+		  void main () {
+		    vpitch = pitch;
+		    vfreq = freq;
+		    vpos = pos;
+
+		    intensity = 0.0;
+				float bin = floor(8.0 * (1.0 + pos.x));
+
+		    for (int i = 0; i < 16; ++i) {
+		      intensity += beats[i];
+		    }
+		    gl_PointSize = 5.0;
+		    gl_Position = projection * view * vec4(pos + pos * freq * 0.3 + pos * que + pos * intensity * 0.1, 1);
+		  }
+	  `,
+
+	  frag: `
+	    precision highp float;
+	    uniform vec4 pitches;
+
+	    varying vec3 vpos;
+	    varying float vpitch, vfreq, intensity;
+
+	    void main () {
+	    	vec3 color = vec3(0.7 - abs(vpos * 2.0).x, 0.7 - abs(vpos * 2.0).y, 1);
+	      gl_FragColor = vec4(color + color * vfreq * 0.1, 1);
+	    }
+	  `,
 
 	  attributes: {
-	  	pos: sphere.positions
-	  		.map(([x, y, z]) => ([x * size, y * size, z * size])),
+	  	pos: shapes.circle(size, detail).positions
+	  		.map(([ x, y, z ]) => ([ x + center[0], y + center[1], z + center[2] ])),
 	    que: ({ cepstrum }) => new Float32Array(extend(cepstrum)),
 	    pitch: ({ pitches }) => new Float32Array(extend(pitches.map(x => x / maxPitch))),
 	    freq: ({ freq }) => new Float32Array(extend(freq.map(x => x / 100)))
@@ -59,11 +62,73 @@ module.exports = (regl, size, detail, center) => {
 	    tick: regl.context('tick'),
 	    volume: regl.context('volume'),
 	  },
-	  elements: sphere.cells,
-	  primitive: 'points'
+	  elements: shapes.circle(1, detail).cells,
+	  primitive: 'triangle strip'
 	})
 }
-},{"glslify":7,"icosphere":8}],3:[function(require,module,exports){
+},{"./shapes":3}],2:[function(require,module,exports){
+const glsl = require('glslify');
+const regl = require('regl')()
+const camera = require('regl-camera')(regl, { 
+	distance: 1.5,
+	theta: Math.PI * .5,
+	mouse: true,
+	center: [0, 0, 0]
+})
+
+const circle = require('./circle');
+
+let drawCircle = circle(regl, .3, 1000, [0, 0, 0]);
+
+require('regl-audio/microphone')({
+  regl,
+  beats: 16,
+  name: '',
+  maxPitch: 1000,
+  minPitch: 500,
+  pitches: 1000,
+  // beatThreshold: .1,
+  done: (microphone) => {
+
+    regl.frame(({ tick }) => {	
+			microphone(({ freqTexture, timeTexture, beats, pitches, volume, cepstrum }) => {
+				camera(() => {
+					regl.clear({ color: [0, 0, 0, 1], depth: true })
+          drawCircle();
+					// points,point,lines,line,triangles,triangle,line loop,line strip,triangle strip,triangle fan
+				})
+			})
+		})
+  }
+})
+},{"./circle":1,"glslify":8,"regl":17,"regl-audio/microphone":14,"regl-camera":16}],3:[function(require,module,exports){
+const { cos, sin, max } = Math;
+
+const circle = (radius, detail) => {
+	const { x, y } = { x: 0, y: radius };
+  const theta = i => (i / (detail - 1)) * 2 * Math.PI;
+
+  let positions = [[0, 0, 0]];
+  let cells = [];
+
+  for (let i = 0; i < detail; i++) {
+  	const point = [ 
+      x * cos(theta(i)) - y * sin(theta(i)),
+      y * cos(theta(i)) + x * sin(theta(i)),
+      0
+    ];
+
+    if (i % 2 === 0) {  cells.push(0)  }
+    if (i < detail - 1) { positions.push(point) }
+
+  	cells.push(max((i + 1) % detail, 1))
+  }
+
+	return { positions, cells };
+}
+
+module.exports = { circle }
+},{}],4:[function(require,module,exports){
 /**
  * Real values fourier transform.
  *
@@ -287,7 +352,7 @@ function reverseBinPermute (N, dest, source) {
 
 	dest[nm1] = source[nm1];
 };
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = identity;
 
 /**
@@ -315,7 +380,7 @@ function identity(out) {
     out[15] = 1;
     return out;
 };
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var identity = require('./identity');
 
 module.exports = lookAt;
@@ -406,7 +471,7 @@ function lookAt(out, eye, center, up) {
 
     return out;
 };
-},{"./identity":4}],6:[function(require,module,exports){
+},{"./identity":5}],7:[function(require,module,exports){
 module.exports = perspective;
 
 /**
@@ -440,7 +505,7 @@ function perspective(out, fovy, aspect, near, far) {
     out[15] = 0;
     return out;
 };
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 module.exports = function(strings) {
   if (typeof strings === 'string') strings = [strings]
   var exprs = [].slice.call(arguments,1)
@@ -452,154 +517,7 @@ module.exports = function(strings) {
   return parts.join('')
 }
 
-},{}],8:[function(require,module,exports){
-var normalize = require('vectors/normalize-nd')
-
-module.exports = icosphere
-
-function icosphere(subdivisions) {
-  subdivisions = +subdivisions|0
-
-  var positions = []
-  var faces = []
-  var t = 0.5 + Math.sqrt(5) / 2
-
-  positions.push([-1, +t,  0])
-  positions.push([+1, +t,  0])
-  positions.push([-1, -t,  0])
-  positions.push([+1, -t,  0])
-
-  positions.push([ 0, -1, +t])
-  positions.push([ 0, +1, +t])
-  positions.push([ 0, -1, -t])
-  positions.push([ 0, +1, -t])
-
-  positions.push([+t,  0, -1])
-  positions.push([+t,  0, +1])
-  positions.push([-t,  0, -1])
-  positions.push([-t,  0, +1])
-
-  faces.push([0, 11, 5])
-  faces.push([0, 5, 1])
-  faces.push([0, 1, 7])
-  faces.push([0, 7, 10])
-  faces.push([0, 10, 11])
-
-  faces.push([1, 5, 9])
-  faces.push([5, 11, 4])
-  faces.push([11, 10, 2])
-  faces.push([10, 7, 6])
-  faces.push([7, 1, 8])
-
-  faces.push([3, 9, 4])
-  faces.push([3, 4, 2])
-  faces.push([3, 2, 6])
-  faces.push([3, 6, 8])
-  faces.push([3, 8, 9])
-
-  faces.push([4, 9, 5])
-  faces.push([2, 4, 11])
-  faces.push([6, 2, 10])
-  faces.push([8, 6, 7])
-  faces.push([9, 8, 1])
-
-  var complex = {
-      cells: faces
-    , positions: positions
-  }
-
-  while (subdivisions-- > 0) {
-    complex = subdivide(complex)
-  }
-
-  positions = complex.positions
-  for (var i = 0; i < positions.length; i++) {
-    normalize(positions[i])
-  }
-
-  return complex
-}
-
-// TODO: work out the second half of loop subdivision
-// and extract this into its own module.
-function subdivide(complex) {
-  var positions = complex.positions
-  var cells = complex.cells
-
-  var newCells = []
-  var newPositions = []
-  var midpoints = {}
-  var f = [0, 1, 2]
-  var l = 0
-
-  for (var i = 0; i < cells.length; i++) {
-    var cell = cells[i]
-    var c0 = cell[0]
-    var c1 = cell[1]
-    var c2 = cell[2]
-    var v0 = positions[c0]
-    var v1 = positions[c1]
-    var v2 = positions[c2]
-
-    var a = getMidpoint(v0, v1)
-    var b = getMidpoint(v1, v2)
-    var c = getMidpoint(v2, v0)
-
-    var ai = newPositions.indexOf(a)
-    if (ai === -1) ai = l++, newPositions.push(a)
-    var bi = newPositions.indexOf(b)
-    if (bi === -1) bi = l++, newPositions.push(b)
-    var ci = newPositions.indexOf(c)
-    if (ci === -1) ci = l++, newPositions.push(c)
-
-    var v0i = newPositions.indexOf(v0)
-    if (v0i === -1) v0i = l++, newPositions.push(v0)
-    var v1i = newPositions.indexOf(v1)
-    if (v1i === -1) v1i = l++, newPositions.push(v1)
-    var v2i = newPositions.indexOf(v2)
-    if (v2i === -1) v2i = l++, newPositions.push(v2)
-
-    newCells.push([v0i, ai, ci])
-    newCells.push([v1i, bi, ai])
-    newCells.push([v2i, ci, bi])
-    newCells.push([ai, bi, ci])
-  }
-
-  return {
-      cells: newCells
-    , positions: newPositions
-  }
-
-  // reuse midpoint vertices between iterations.
-  // Otherwise, there'll be duplicate vertices in the final
-  // mesh, resulting in sharp edges.
-  function getMidpoint(a, b) {
-    var point = midpoint(a, b)
-    var pointKey = pointToKey(point)
-    var cachedPoint = midpoints[pointKey]
-    if (cachedPoint) {
-      return cachedPoint
-    } else {
-      return midpoints[pointKey] = point
-    }
-  }
-
-  function pointToKey(point) {
-    return point[0].toPrecision(6) + ','
-         + point[1].toPrecision(6) + ','
-         + point[2].toPrecision(6)
-  }
-
-  function midpoint(a, b) {
-    return [
-        (a[0] + b[0]) / 2
-      , (a[1] + b[1]) / 2
-      , (a[2] + b[2]) / 2
-    ]
-  }
-}
-
-},{"vectors/normalize-nd":20}],9:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict'
 
 module.exports = mouseListen
@@ -1207,7 +1125,7 @@ module.exports = function (options) {
   }
 }
 
-},{"fourier-transform":3}],14:[function(require,module,exports){
+},{"fourier-transform":4}],14:[function(require,module,exports){
 const getUserMedia = require('getusermedia')
 const reglAnalyser = require('./analyser')
 
@@ -1305,7 +1223,7 @@ module.exports = function (constraints, cb) {
     });
 };
 
-},{"webrtc-adapter":21}],16:[function(require,module,exports){
+},{"webrtc-adapter":20}],16:[function(require,module,exports){
 var mouseChange = require('mouse-change')
 var mouseWheel = require('mouse-wheel')
 var identity = require('gl-mat4/identity')
@@ -1494,7 +1412,7 @@ function createCamera (regl, props_) {
   return setupCamera
 }
 
-},{"gl-mat4/identity":4,"gl-mat4/lookAt":5,"gl-mat4/perspective":6,"mouse-change":9,"mouse-wheel":11}],17:[function(require,module,exports){
+},{"gl-mat4/identity":5,"gl-mat4/lookAt":6,"gl-mat4/perspective":7,"mouse-change":9,"mouse-wheel":11}],17:[function(require,module,exports){
 (function(da,ea){"object"===typeof exports&&"undefined"!==typeof module?module.exports=ea():"function"===typeof define&&define.amd?define(ea):da.createREGL=ea()})(this,function(){function da(a,b){this.id=vb++;this.type=a;this.data=b}function ea(a){if(0===a.length)return[];var b=a.charAt(0),c=a.charAt(a.length-1);if(1<a.length&&b===c&&('"'===b||"'"===b))return['"'+a.substr(1,a.length-2).replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"'];if(b=/\[(false|true|null|\d+|'[^']*'|"[^"]*")\]/.exec(a))return ea(a.substr(0,
 b.index)).concat(ea(b[1])).concat(ea(a.substr(b.index+b[0].length)));b=a.split(".");if(1===b.length)return['"'+a.replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"'];a=[];for(c=0;c<b.length;++c)a=a.concat(ea(b[c]));return a}function Wa(a){return"["+ea(a).join("][")+"]"}function wb(){var a={"":0},b=[""];return{id:function(c){var d=a[c];if(d)return d;d=a[c]=b.length;b.push(c);return d},str:function(a){return b[a]}}}function xb(a,b,c){function d(){var b=window.innerWidth,d=window.innerHeight;a!==document.body&&
 (d=a.getBoundingClientRect(),b=d.right-d.left,d=d.bottom-d.top);f.width=c*b;f.height=c*d;A(f.style,{width:b+"px",height:d+"px"})}var f=document.createElement("canvas");A(f.style,{border:0,margin:0,padding:0,top:0,left:0});a.appendChild(f);a===document.body&&(f.style.position="absolute",A(a.style,{margin:0,padding:0}));window.addEventListener("resize",d,!1);d();return{canvas:f,onDestroy:function(){window.removeEventListener("resize",d);a.removeChild(f)}}}function yb(a,b){function c(c){try{return a.getContext(c,
@@ -2313,28 +2231,6 @@ function toPX(str, element) {
   return 1
 }
 },{"parse-unit":12}],20:[function(require,module,exports){
-module.exports = normalize
-
-function normalize(vec) {
-  var mag = 0
-  for (var n = 0; n < vec.length; n++) {
-    mag += vec[n] * vec[n]
-  }
-  mag = Math.sqrt(mag)
-
-  // avoid dividing by zero
-  if (mag === 0) {
-    return Array.apply(null, new Array(vec.length)).map(Number.prototype.valueOf, 0)
-  }
-
-  for (var n = 0; n < vec.length; n++) {
-    vec[n] /= mag
-  }
-
-  return vec
-}
-
-},{}],21:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -2428,7 +2324,7 @@ function normalize(vec) {
   }
 })();
 
-},{"./chrome/chrome_shim":22,"./edge/edge_shim":24,"./firefox/firefox_shim":26,"./safari/safari_shim":28,"./utils":29}],22:[function(require,module,exports){
+},{"./chrome/chrome_shim":21,"./edge/edge_shim":23,"./firefox/firefox_shim":25,"./safari/safari_shim":27,"./utils":28}],21:[function(require,module,exports){
 
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
@@ -2713,7 +2609,7 @@ module.exports = {
   reattachMediaStream: chromeShim.reattachMediaStream
 };
 
-},{"../utils.js":29,"./getusermedia":23}],23:[function(require,module,exports){
+},{"../utils.js":28,"./getusermedia":22}],22:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -2904,7 +2800,7 @@ module.exports = function() {
   }
 };
 
-},{"../utils.js":29}],24:[function(require,module,exports){
+},{"../utils.js":28}],23:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -3955,7 +3851,7 @@ module.exports = {
   reattachMediaStream: edgeShim.reattachMediaStream
 };
 
-},{"../utils":29,"./getusermedia":25,"sdp":18}],25:[function(require,module,exports){
+},{"../utils":28,"./getusermedia":24,"sdp":18}],24:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -3989,7 +3885,7 @@ module.exports = function() {
   };
 };
 
-},{}],26:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -4160,7 +4056,7 @@ module.exports = {
   reattachMediaStream: firefoxShim.reattachMediaStream
 };
 
-},{"../utils":29,"./getusermedia":27}],27:[function(require,module,exports){
+},{"../utils":28,"./getusermedia":26}],26:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -4312,7 +4208,7 @@ module.exports = function() {
   };
 };
 
-},{"../utils":29}],28:[function(require,module,exports){
+},{"../utils":28}],27:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -4348,7 +4244,7 @@ module.exports = {
   // reattachMediaStream: safariShim.reattachMediaStream
 };
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
  *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
@@ -4493,4 +4389,4 @@ module.exports = {
   extractVersion: utils.extractVersion
 };
 
-},{}]},{},[1]);
+},{}]},{},[2]);

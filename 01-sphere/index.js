@@ -2,14 +2,14 @@ const glsl = require('glslify');
 const regl = require('regl')()
 const camera = require('regl-camera')(regl, { 
 	distance: 1.5,
-	theta: Math.PI * .5,
+	theta: Math.PI * .3,
 	mouse: true,
 	center: [0, 0, 0]
 })
 
 const sphere = require('./sphere');
 
-const drawSphere = sphere(regl, .5, 4, [0, 0, 0]);
+const drawSphere = sphere(regl, .5, 6, [0, 0, 0]);
 
 require('regl-audio/microphone')({
   regl,
