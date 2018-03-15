@@ -22,6 +22,19 @@ module.exports = (regl, size, detail, center) => {
 
 		  #pragma glslify: snoise4 = require(glsl-noise/simplex/4d);
 
+		  mat4 rotationMatrix(vec3 axis, float angle)
+			{
+			    axis = normalize(axis);
+			    float s = sin(angle);
+			    float c = cos(angle);
+			    float oc = 1.0 - c;
+			    
+			    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+			                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+			                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+			                0.0,                                0.0,                                0.0,                                1.0);
+			}
+
 		  void main () {
 		    vpos = pos;
 
@@ -37,7 +50,9 @@ module.exports = (regl, size, detail, center) => {
 		  	vec3 freqDist = vpos * freq * 0.5;
 		  	vec3 pitchDist = vpos * vpitch * 0.1;
 
-		    gl_Position = projection * view * vec4(vpos * 0.5 + freqDist + intesDist, 1.0);
+		  	mat4 trans = getMatrix('translate(40px, 20px)');
+
+		    gl_Position = trans * projection * view * vec4(vpos * 0.5 + freqDist + intesDist, 1.0);
 		  }
 	  `,
 
@@ -52,9 +67,10 @@ module.exports = (regl, size, detail, center) => {
 	    #pragma glslify: snoise4 = require(glsl-noise/simplex/4d);
 
 	    void main () {
-	    	vec3 color = vec3(.6 - abs(vpos * 1.5).x, .6 - abs(vpos * 1.5).y, 1.0 * sin(tick * 0.001));
+	    	vec3 color = vec3(.2 - abs(vpos * 1.5).x, .2 - abs(vpos * 1.5).y, 1.0 * sin(tick * 0.001));
 	    	// vec3 color = vec3(0,0,0);
-	      gl_FragColor = vec4(color + color * snoise4(vec4(color * 3.0, tick * 0.01)), 1);
+	    	vec3 noise = color * snoise4(vec4(color * 3.0, tick * 0.01));
+	      gl_FragColor = vec4(color * 5.0 + noise, 1);
 	    }
 	  `,
 

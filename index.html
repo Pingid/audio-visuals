@@ -1,21 +1,38 @@
 <!DOCTYPE html>
 <html>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://unpkg.com/basscss@8.0.2/css/basscss.min.css" rel="stylesheet">
   <style> 
-		body { 
-			margin: 0;
-			font-family: courier;
-			background-color: pink;
-			padding: 4rem;
-		} 
-		h2 { margin-bottom: 4rem; }
-		a { 
-			max-width: 20rem;
-			background-color: black 
+  	@import url('https://fonts.googleapis.com/css?family=Inconsolata:400,700|Playfair+Display:400,400i,700,700i,900,900i');
+
+		body {
+		  margin: 0;
+		  padding: 0;
+		  font-family: 'Inconsolata', courier, monospace, sans-serif; 
+		  font-size: 0.618rem;
 		}
-		p {
-			max-width: 20rem;
-			background: black;
-			color: white;
+
+		h1 { font-size: 6.18vw; }
+		h2 { font-size: 3.81924vw; font-weight: normal; }
+		h4 { font-size: 1.618rem; }
+		p { line-height: 21px; }
+		a { color: red; text-decoration: none; }
+		ul { list-style-type: none; padding: 0; }
+		header {
+		  padding-left: 10vw;
+		  padding-right: 10vw;
+		  padding-top: 10vh;
+
+		}
+		.underline {
+		  color: #333;
+		  color: transparent;
+		  text-shadow: 0 0 red, .08em 0 0 white, 0 0, -.08em 0 0 white;
+		  background: -webkit-linear-gradient(red, red) center 1.09em no-repeat;
+		  background: linear-gradient(red, red) center 1.09em no-repeat;
+		  background-size: 100% 1px;
+		  -webkit-transition: .2s ease;
+		  transition: .2s ease;
 		}
 		.container {
 			display: flex;
@@ -27,15 +44,26 @@
 			background-size: cover;
 			background-position: center center;
 		}
+		.thumb-wrapper { max-width: 20rem; background-color: red; }
+		.thumb-wrapper p { background-color: black; color: white; }
 		.vis1 { background-image: url('./images/01-sphere.png'); }
 	</style>
   <body>
-  	<a href="http://danbeaven.co.uk"><h2>Dan</h2></a>
-  	<div class="container">
-			<a href="https://compassionate-ptolemy-df475d.netlify.com/">
-				<p>./02-Sphere</p>
-				<div class="thumb vis1"></div>
-			</a>
-		</div>
+  	<header>
+			<h4 class="m0">Dan Beaven</h4>
+			<p className="mt1" style={{ fontSize: '.618rem' }}>
+        <a href="https://www.danbeaven.co.uk">me</a>&nbsp;&nbsp;
+        <a href="https://www.danbeaven.co.uk/blog">blog</a>&nbsp;&nbsp;
+        <a href="https://github.com/Pingid">github</a>&nbsp;&nbsp;
+        <a className="" href="https://instagram.com/danielbeaven/">instagram</a>&nbsp;&nbsp;
+        <a href="mailto:dm.beaven@gmail.com?Subject=Hello" target="_top">email</a>
+      </p>
+  		<div class="p1 mt3 thumb-wrapper">
+				<a href="https://compassionate-ptolemy-df475d.netlify.com/">
+					<p class="m0 mb1">./01-Sphere</p>
+					<div class="thumb vis1"></div>
+				</a>
+			</div>
+		</header>
   </body>
 </html>
